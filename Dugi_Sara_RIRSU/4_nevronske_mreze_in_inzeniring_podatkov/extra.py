@@ -92,7 +92,7 @@ classification_algorithms_no_preprocessing = {
 results_no_preprocessing = {algo: {'Točnost': [], 'F1': [], 'Preciznost': [], 'Priklic': []} for algo in classification_algorithms_no_preprocessing.keys()}
 
 for algo_name, model in classification_algorithms_no_preprocessing.items():
-    for train_index, test_index in kf.split(X_images):  # Popravljeno, da uporablja X_images in y_images
+    for train_index, test_index in kf.split(X_images):
         X_train, X_test = X_images[train_index], X_images[test_index]
         y_train, y_test = y_images[train_index], y_images[test_index]
 

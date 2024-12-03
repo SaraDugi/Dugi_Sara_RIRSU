@@ -10,11 +10,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_v
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
 
-# Ustvarjanje izhodne mape za grafe
 output_dir = 'Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov'
 os.makedirs(output_dir, exist_ok=True)
-
-# Obdelava podatkov
 file_path_modded = 'Dugi_Sara_RIRSU/1_regresija/modified_data/modded_data.csv'
 df = pd.read_csv(file_path_modded)
 
@@ -34,7 +31,7 @@ for col in missing_cols:
     df.loc[df[col].isnull(), col] = model.predict(X_null)
 
 # Preverjanje imena ciljne spremenljivke
-target_column = 'rented_bike_count'  # Preverite in zamenjajte z ustreznim stolpcem
+target_column = 'rented_bike_count'
 
 # Dodajanje treh novih značilnic
 df['temp_humidity_interaction'] = df['temperature'] * df['humidity']
@@ -65,7 +62,7 @@ info_gain_threshold = 0.01
 selected_features = X.columns[info_gain > info_gain_threshold]
 print("Izbrane značilnice:", selected_features)
 
-# Normalizacija (če je potrebna)
+# Normalizacija 
 X_selected = df[selected_features]
 
 # Regresijski algoritmi
@@ -133,7 +130,7 @@ for metric in regression_metrics:
 classification_algorithms = {
     "RandomForestClassifier": RandomForestClassifier(random_state=1234),
     "GradientBoostingClassifier": GradientBoostingClassifier(random_state=1234),
-    "AdaBoostClassifier": AdaBoostClassifier(algorithm='SAMME', random_state=1234),  # Odpravljeno opozorilo
+    "AdaBoostClassifier": AdaBoostClassifier(algorithm='SAMME', random_state=1234),
     "MLPClassifier": MLPClassifier(hidden_layer_sizes=(64, 32), activation='relu', solver='adam', max_iter=500, random_state=1234)
 }
 
