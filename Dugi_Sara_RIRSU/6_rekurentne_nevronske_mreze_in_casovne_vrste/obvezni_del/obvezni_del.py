@@ -288,3 +288,19 @@ def evaluate_model(model, X_train, y_train, X_test, y_test, scaler, model_name):
 rnn_metrics = evaluate_model(rnn_model, X_train, y_train, X_test, y_test, scaler, 'RNN')
 gru_metrics = evaluate_model(gru_model, X_train, y_train, X_test, y_test, scaler, 'GRU')
 lstm_metrics = evaluate_model(lstm_model, X_train, y_train, X_test, y_test, scaler, 'LSTM')
+
+import joblib
+
+output_model_dir = "Dugi_Sara_RIRSU/6_rekurentne_nevronske_mreze_in_casovne_vrste/models"
+os.makedirs(output_model_dir, exist_ok=True)
+
+rnn_model.save(os.path.join(output_model_dir, 'rnn_model.h5'))
+gru_model.save(os.path.join(output_model_dir, 'gru_model.h5'))
+lstm_model.save(os.path.join(output_model_dir, 'lstm_model.h5'))
+joblib.dump(scaler, os.path.join(output_model_dir, 'scaler.pkl'))
+
+print("Modeli in scaler so bili uspešno shranjeni v mapo:")
+print(f"- RNN model: {output_model_dir}/rnn_model.h5")
+print(f"- GRU model: {output_model_dir}/gru_model.h5")
+print(f"- LSTM model: {output_model_dir}/lstm_model.h5")
+print(f"- Scaler: {output_model_dir}/scaler.pkl")

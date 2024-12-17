@@ -9,6 +9,7 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_variance_score, accuracy_score, f1_score, precision_score, recall_score
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
+import joblib
 
 output_dir = 'Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov'
 os.makedirs(output_dir, exist_ok=True)
@@ -64,6 +65,11 @@ print("Izbrane značilnice:", selected_features)
 
 # Normalizacija 
 X_selected = df[selected_features]
+
+# Shrani seznam vseh značilk uporabljenih med učenjem
+joblib.dump(X_selected.columns.tolist(), os.path.join(output_dir, "all_features.pkl"))
+print("Seznam vseh značilk je shranjen.")
+
 
 # Regresijski algoritmi
 regression_algorithms = {
@@ -158,3 +164,19 @@ for algo, metrics in average_classification_results.items():
     print(f"\n### {algo} ###")
     for metric, value in metrics.items():
         print(f"{metric}: {value:.4f}")
+        
+
+import joblib
+
+scalers_dir = 'Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/scalers'
+os.makedirs(scalers_dir, exist_ok=True)
+
+adaboost_model = AdaBoostRegressor(random_state=1234)
+adaboost_model.fit(X_selected, y)
+joblib.dump(adaboost_model, os.path.join(scalers_dir, 'AdaBoost_Regresija.joblib'))
+print("AdaBoost model shranjen.")
+
+scaler_standard = StandardScaler()
+df[numerical_features] = scaler_standard.fit_transform(df[numerical_features])
+joblib.dump(scaler_standard, os.path.join(scalers_dir, 'scaler_standard_new.pkl'))
+print("StandardScaler shranjen.")
