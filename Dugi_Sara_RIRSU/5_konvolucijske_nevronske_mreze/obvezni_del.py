@@ -16,7 +16,6 @@ optimized_model_dir = os.path.join(save_dir, "optimized_model")
 comparison_dir = os.path.join(save_dir, "comparison")
 categories = ['circles', 'squares', 'triangles']
 
-# Funkcija za ustvarjanje DataFrame s potmi do slik in oznakami
 def create_dataframe(data_dir, categories):
     filepaths = []
     labels = []
@@ -37,7 +36,7 @@ test_csv_path = os.path.join(save_dir, "test_data.csv")
 train_df.to_csv(train_csv_path, index=False)
 test_df.to_csv(test_csv_path, index=False)
 
-# DataImageGenerator za normalizacijo slik
+# normalizacija slik
 train_data_gen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
 test_data_gen = ImageDataGenerator(rescale=1./255)
 
@@ -89,7 +88,7 @@ def build_model(input_shape=(28, 28, 1), learning_rate=0.001):
         AveragePooling2D(pool_size=(2, 2)),
         Flatten(),
         Dense(128, activation='relu'),
-        Dense(3, activation='softmax')  # Za tri kategorije
+        Dense(3, activation='softmax')
     ])
     model.compile(optimizer=Adam(learning_rate=learning_rate),
                   loss='categorical_crossentropy',
@@ -138,7 +137,7 @@ def plot_metrics(history, fold, model_name, save_dir):
     plt.savefig(os.path.join(specific_save_dir, f'{model_name}_metrics_fold_{fold}.png'))
     plt.close()
 
-# izvajanje 5-kratne prečne validacije
+# 5-kratna prečna validacija
 def train_and_evaluate_models(train_df, test_df, save_dir, input_shape=(28, 28), epochs=50):
     kf = KFold(n_splits=5, shuffle=True, random_state=1234)
 
