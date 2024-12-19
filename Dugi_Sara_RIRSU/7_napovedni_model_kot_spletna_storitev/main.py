@@ -35,14 +35,30 @@ def create_windows(data, window_size=186):
     return np.array(X), np.array(y)
 
 #4
-MODEL_PATH = 'Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/scalers/AdaBoost_Regresija.joblib'
-SCALER_PATH = 'Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/scalers/scaler_standard_new.pkl'
-SELECTED_FEATURES_PATH = "Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/selected_features.pkl"
-ALL_FEATURES_PATH = "Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/all_features.pkl"
-model_nal4= joblib.load(MODEL_PATH)
-scaler_nal4 = joblib.load(SCALER_PATH)
-all_features = joblib.load(ALL_FEATURES_PATH)
-selected_features = joblib.load(SELECTED_FEATURES_PATH)
+scaler_standard = joblib.load('Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/models/scaler_standard_new.pkl')
+scaler_minmax = joblib.load('Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/models/scaler_minmax.pkl')
+model_task4 = joblib.load('Dugi_Sara_RIRSU/4_nevronske_mreze_in_inzeniring_podatkov/models_new/AdaBoost_Regresija.joblib')
+
+selected_features = [
+    'temperature', 'feels_like_temperature', 'hour', 'month',
+    'dew_point_temperature', 'seasons_Winter', 'solar_radiation',
+    'work_hours_No', 'work_hours_Yes', 'hour_category', 'humidity',
+    'rainfall', 'visibility', 'seasons_Summer', 'seasons_Autumn', 'is_raining'
+]
+
+class Naloga4Model(BaseModel):
+    date: str
+    temperature: float
+    humidity: float
+    wind_speed: float
+    dew_point_temperature: float
+    solar_radiation: float
+    rainfall: float
+    snowfall: float
+    hour: int
+    seasons: str
+    holiday: str
+    work_hours: str
 
 def categorize_hour(hour):
     if 5 <= hour <= 11:
@@ -53,13 +69,6 @@ def categorize_hour(hour):
         return 0.6
     else:
         return 0.1
-    
-try:
-    print("Značilnice, ki jih model pričakuje:")
-    expected_features = model_nal4.feature_names_in_
-    print(expected_features)
-except Exception as e:
-    raise RuntimeError(f"Težava pri nalaganju modela ali scalerja: {e}")
 
 class PredictRequest(BaseModel):
     hour: float
@@ -81,43 +90,48 @@ class PredictRequest(BaseModel):
     humidity_inverse: float
     temperature_log: float
 
-required_features = all_features
-
 @app.get("/")
 async def root():
     return {"message": "Časovna vrsta napovedi za izposojo koles."}
 
 @app.post("/predict/task4")
-async def predict_line(data: List[PredictRequest]):
+async def predict_line(data: List[Naloga4Model]):
     try:
         df_bike_data = pd.DataFrame([item.dict() for item in data])
 
-        df_bike_data[['day', 'month', 'year']] = df_bike_data['date'].str.split('/', expand=True)
+        df_bike_data[['day', 'month', 'year']] = df_bike_data['date'].str.split('-', expand=True)
         df_bike_data['day'] = pd.to_numeric(df_bike_data['day'])
         df_bike_data['month'] = pd.to_numeric(df_bike_data['month'])
         df_bike_data['year'] = pd.to_numeric(df_bike_data['year'])
         df_bike_data = df_bike_data.drop('date', axis=1)
+        categoric_columns = ['seasons', 'holiday', 'work_hours']
+        df_bike_data = pd.get_dummies(df_bike_data, columns=categoric_columns)
 
-        df_bike_data['temp_humidity_interaction'] = df_bike_data['temperature'] * df_bike_data['humidity']
-        df_bike_data['temp_squared'] = df_bike_data['temperature'] ** 2
-        df_bike_data['humidity_inverse'] = 1 / (df_bike_data['humidity'] + 1e-3)
-        df_bike_data['temperature_log'] = np.log1p(df_bike_data['temperature'])
-
+        df_bike_data['is_raining'] = df_bike_data['rainfall'].apply(lambda x: 1 if x > 0 else 0)
+        df_bike_data['feels_like_temperature'] = (
+            df_bike_data['temperature'] - ((0.55 - 0.0055 * df_bike_data['humidity']) *
+                                           (df_bike_data['temperature'] - 14.5))
+        )
+        df_bike_data['hour_category'] = df_bike_data['hour'].apply(categorize_hour)
         df_bike_data['solar_radiation'] = np.log1p(df_bike_data['solar_radiation'])
         df_bike_data['rainfall'] = np.log1p(df_bike_data['rainfall'])
         df_bike_data['snowfall'] = np.log1p(df_bike_data['snowfall'])
 
-        columns_to_scale = ['temperature', 'humidity', 'wind_speed', 'dew_point_temperature']
-        df_bike_data[columns_to_scale] = scaler_nal4.transform(df_bike_data[columns_to_scale])
+        columns_to_scale = ['temperature', 'humidity', 'wind_speed', 'feels_like_temperature', 'dew_point_temperature']
+        df_bike_data[columns_to_scale] = scaler_standard.transform(df_bike_data[columns_to_scale])
+        df_bike_data['solar_radiation'] = scaler_minmax.transform(df_bike_data[['solar_radiation']])
+
         df_selected = df_bike_data.reindex(columns=selected_features, fill_value=0)
-        predictions = model_nal4.predict(df_selected)
+
+        predictions = model_task4.predict(df_selected)
         predictions_original_scale = np.expm1(predictions)
 
-        return {"predictions": predictions_original_scale.tolist()}
+        predictions_original_scale = np.nan_to_num(predictions_original_scale, nan=0.0, posinf=1e10, neginf=-1e10)
 
+        return {"predictions": predictions_original_scale.tolist()}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
+    
 @app.post("/predict/task6")
 async def predict_task6(data: List[MBajkModel], model_type: str = "RNN"):
     try:
